@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder.AppleTV.Storyboard" version="3.0" toolsVersion="14490.70" targetRuntime="AppleTV" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+    <device id="appleTV" orientation="landscape">
+        <adaptation id="light"/>
+    </device>
+    <dependencies>
+        <deployment identifier="tvOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14490.49"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="tne-QT-ifu">
+            <objects>
+                <viewController id="BYZ-38-t0r" customClass="ViewController" customModule="AppleTVMovieApp" customModuleProvider="target" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="y3c-jy-aDJ"/>
+                        <viewControllerLayoutGuide type="bottom" id="wfy-db-euE"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+                        <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="ylc-oM-jqh">
+                                <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="10" minimumInteritemSpacing="10" id="WzG-tp-i9Q">
+                                    <size key="itemSize" width="386" height="610"/>
+                                    <size key="headerReferenceSize" width="0.0" height="0.0"/>
+                                    <size key="footerReferenceSize" width="0.0" height="0.0"/>
+                                    <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                </collectionViewFlowLayout>
+                                <cells>
+                                    <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="MovieCell" id="UgX-C8-6Gc" customClass="MovieCell" customModule="AppleTVMovieApp" customModuleProvider="target">
+                                        <rect key="frame" x="0.0" y="0.0" width="386" height="610"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
+                                            <rect key="frame" x="0.0" y="0.0" width="386" height="610"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Stranger Things" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="iDf-ih-HMe">
+                                                    <rect key="frame" x="31" y="528" width="325" height="62"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="height" constant="62" id="k42-ba-icK"/>
+                                                    </constraints>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="26"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="strangerthings" translatesAutoresizingMaskIntoConstraints="NO" id="gI1-r6-4g4">
+                                                    <rect key="frame" x="31" y="20" width="325" height="489"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="height" constant="489" id="soG-fj-DTW"/>
+                                                    </constraints>
+                                                </imageView>
+                                            </subviews>
+                                        </view>
+                                        <constraints>
+                                            <constraint firstItem="gI1-r6-4g4" firstAttribute="top" secondItem="UgX-C8-6Gc" secondAttribute="top" constant="20" id="Fir-bb-puv"/>
+                                            <constraint firstItem="iDf-ih-HMe" firstAttribute="top" secondItem="gI1-r6-4g4" secondAttribute="bottom" constant="19" id="WB6-pL-xHH"/>
+                                            <constraint firstItem="gI1-r6-4g4" firstAttribute="leading" secondItem="UgX-C8-6Gc" secondAttribute="leading" constant="31" id="YQE-ps-y2G"/>
+                                            <constraint firstAttribute="trailing" secondItem="gI1-r6-4g4" secondAttribute="trailing" constant="30" id="kvi-rT-2VZ"/>
+                                            <constraint firstAttribute="trailing" secondItem="iDf-ih-HMe" secondAttribute="trailing" constant="30" id="md5-as-Rr8"/>
+                                            <constraint firstItem="iDf-ih-HMe" firstAttribute="leading" secondItem="UgX-C8-6Gc" secondAttribute="leading" constant="31" id="o4I-h9-yeP"/>
+                                        </constraints>
+                                        <connections>
+                                            <outlet property="movieImage" destination="gI1-r6-4g4" id="Zih-1l-qUc"/>
+                                            <outlet property="movieName" destination="iDf-ih-HMe" id="SVE-mp-jIx"/>
+                                        </connections>
+                                    </collectionViewCell>
+                                </cells>
+                            </collectionView>
+                        </subviews>
+                        <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="ylc-oM-jqh" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="52A-Z6-Wcm"/>
+                            <constraint firstItem="ylc-oM-jqh" firstAttribute="top" secondItem="8bC-Xf-vdC" secondAttribute="top" id="6bu-0G-Y9G"/>
+                            <constraint firstAttribute="trailing" secondItem="ylc-oM-jqh" secondAttribute="trailing" id="U08-et-s5b"/>
+                            <constraint firstAttribute="bottom" secondItem="ylc-oM-jqh" secondAttribute="bottom" id="ibS-hn-lQG"/>
+                        </constraints>
+                        <viewLayoutGuide key="safeArea" id="wu6-TO-1qx"/>
+                    </view>
+                    <connections>
+                        <outlet property="collectionView" destination="ylc-oM-jqh" id="jAr-60-IaN"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="strangerthings" width="2364" height="3500"/>
+    </resources>
+</document>

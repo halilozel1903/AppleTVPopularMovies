@@ -10,6 +10,8 @@ import UIKit
 
 class MovieCell: UICollectionViewCell {
     
+    // cell gosterilecek icerikler
+    
     @IBOutlet weak var movieImage: UIImageView!
     @IBOutlet weak var movieName: UILabel!
     

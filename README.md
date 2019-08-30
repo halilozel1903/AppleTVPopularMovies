@@ -2,7 +2,9 @@
 
 ![Screenshot](apple.jpg)
 
-How to build an Apple TV App Tutorial for tvOS ?
+## How to build an Apple TV App Tutorial for tvOS ?
+
+We will process and display the data received from the Internet.
 
 I developed Apple TV application using TMDb.
 

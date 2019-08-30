@@ -1,10 +1,12 @@
 # Apple TV Popular Movies App
 
+![Screenshot](apple.jpg)
+
 How to build an Apple TV App Tutorial for tvOS ?
 
 I developed Apple TV application using TMDb.
 
-![Screenshot](db.png)
+![Screenshot](db.jpg)
 
 https://www.themoviedb.org/documentation/api
 

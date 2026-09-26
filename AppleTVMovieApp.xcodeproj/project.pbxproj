@@ -18,6 +18,8 @@
 		29D4226F23197C0000735BEB /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D4226E23197C0000735BEB /* ImageLoader.swift */; };
 		29D4227523197C2000735BEB /* MovieDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D4227423197C2000735BEB /* MovieDetailViewController.swift */; };
 		A1F0001123197D1000735BEB /* RailHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0001223197D1000735BEB /* RailHeaderView.swift */; };
+		A1F0002123197D2000735BEB /* MovieInfoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0002223197D2000735BEB /* MovieInfoCell.swift */; };
+		A1F0003123197D2000735BEB /* CastMemberCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0003223197D2000735BEB /* CastMemberCell.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +36,8 @@
 		29D4226E23197C0000735BEB /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		29D4227423197C2000735BEB /* MovieDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieDetailViewController.swift; sourceTree = "<group>"; };
 		A1F0001223197D1000735BEB /* RailHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RailHeaderView.swift; sourceTree = "<group>"; };
+		A1F0002223197D2000735BEB /* MovieInfoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieInfoCell.swift; sourceTree = "<group>"; };
+		A1F0003223197D2000735BEB /* CastMemberCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CastMemberCell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +76,8 @@
 				29D4227423197C2000735BEB /* MovieDetailViewController.swift */,
 				29D42265231974DA00735BEB /* MovieCell.swift */,
 				A1F0001223197D1000735BEB /* RailHeaderView.swift */,
+				A1F0002223197D2000735BEB /* MovieInfoCell.swift */,
+				A1F0003223197D2000735BEB /* CastMemberCell.swift */,
 				29D4226A23197B5000735BEB /* Movie.swift */,
 				29D4226C23197C0000735BEB /* MovieService.swift */,
 				29D4226E23197C0000735BEB /* ImageLoader.swift */,
@@ -161,6 +167,8 @@
 				29D4227523197C2000735BEB /* MovieDetailViewController.swift in Sources */,
 				29D42266231974DA00735BEB /* MovieCell.swift in Sources */,
 				A1F0001123197D1000735BEB /* RailHeaderView.swift in Sources */,
+				A1F0002123197D2000735BEB /* MovieInfoCell.swift in Sources */,
+				A1F0003123197D2000735BEB /* CastMemberCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

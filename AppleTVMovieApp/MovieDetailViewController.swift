@@ -8,23 +8,45 @@
 
 import UIKit
 
-final class MovieDetailViewController: UIViewController {
+final class MovieDetailViewController: UIViewController, UICollectionViewDelegate {
+    private enum DetailSection: Hashable {
+        case summary
+        case cast
+    }
+
+    private enum DetailItem: Hashable {
+        case summary
+        case person(CastMember)
+        case note(DetailNote)
+    }
+
+    private enum DetailNote: Hashable {
+        case castEmpty
+        case castFailed
+
+        var text: String {
+            switch self {
+            case .castEmpty:
+                return "No cast listed."
+            case .castFailed:
+                return "Cast isn't available right now."
+            }
+        }
+    }
+
     private let preview: Movie
     private let service: MovieService
     private var loadTask: Task<Void, Never>?
-    private var imageTask: Task<Void, Never>?
+    private var displayedMovie: Movie?
+    private var directorLine: String?
+    private var castMembers: [CastMember] = []
+    private var castNote: DetailNote?
+    private var appliedSideInset: CGFloat = -1
+    private var dataSource: UICollectionViewDiffableDataSource<DetailSection, DetailItem>!
 
     private let gradientLayer = CAGradientLayer()
     private let backButton = UIButton(type: .system)
-    private let posterView = UIImageView()
-    private let placeholderView = UIImageView()
-    private let eyebrowLabel = UILabel()
-    private let titleLabel = UILabel()
-    private let metaLabel = UILabel()
-    private let overviewLabel = UILabel()
-    private let contentRow = UIStackView()
-    private let textScroll = UIScrollView()
-    private let textStack = UIStackView()
+    private var collectionView: UICollectionView!
     private let statusContainer = UIStackView()
     private let spinner = UIActivityIndicatorView(style: .large)
     private let statusLabel = UILabel()
@@ -44,6 +66,9 @@ final class MovieDetailViewController: UIViewController {
         if !retryButton.isHidden {
             return [retryButton]
         }
+        if isViewLoaded, collectionView != nil, !collectionView.isHidden {
+            return [collectionView]
+        }
         return [backButton]
     }
 
@@ -53,7 +78,8 @@ final class MovieDetailViewController: UIViewController {
         overrideUserInterfaceStyle = .dark
         configureAppearance()
         configureBackButton()
-        configureContent()
+        configureCollection()
+        configureDataSource()
         configureStatus()
         installConstraints()
         loadDetails()
@@ -67,6 +93,7 @@ final class MovieDetailViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         gradientLayer.frame = view.bounds
+        installLayoutIfNeeded()
     }
 
     override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
@@ -77,6 +104,10 @@ final class MovieDetailViewController: UIViewController {
                 button.transform = CGAffineTransform(scaleX: scale, y: scale)
             }
         }
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.deselectItem(at: indexPath, animated: false)
     }
 
     private func configureAppearance() {
@@ -103,83 +134,54 @@ final class MovieDetailViewController: UIViewController {
         backButton.addTarget(self, action: #selector(backTapped), for: .primaryActionTriggered)
     }
 
-    private func configureContent() {
-        posterView.contentMode = .scaleAspectFill
-        posterView.clipsToBounds = true
-        posterView.backgroundColor = Theme.posterFill
-        posterView.layer.cornerRadius = Theme.posterCornerRadius
-        posterView.translatesAutoresizingMaskIntoConstraints = false
+    private func configureCollection() {
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: makeLayout(sideInset: 90))
+        collectionView.backgroundColor = .clear
+        collectionView.clipsToBounds = false
+        collectionView.remembersLastFocusedIndexPath = true
+        collectionView.contentInsetAdjustmentBehavior = .never
+        collectionView.alwaysBounceVertical = true
+        collectionView.showsVerticalScrollIndicator = false
+        collectionView.showsHorizontalScrollIndicator = false
+        collectionView.delegate = self
+        collectionView.accessibilityIdentifier = "detail.collection"
+        collectionView.isHidden = true
+        appliedSideInset = 90
+    }
 
-        placeholderView.image = UIImage(systemName: "film")
-        placeholderView.tintColor = UIColor(white: 1, alpha: 0.45)
-        placeholderView.contentMode = .scaleAspectFit
-        placeholderView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 48, weight: .regular)
-        placeholderView.translatesAutoresizingMaskIntoConstraints = false
-        posterView.addSubview(placeholderView)
+    private func configureDataSource() {
+        let summaryRegistration = UICollectionView.CellRegistration<MovieInfoCell, DetailItem> { [weak self] cell, _, _ in
+            guard let self = self, let movie = self.displayedMovie else { return }
+            cell.configure(movie: movie, directorLine: self.directorLine)
+        }
+        let castRegistration = UICollectionView.CellRegistration<CastMemberCell, DetailItem> { cell, _, item in
+            guard case .person(let person) = item else { return }
+            cell.configure(with: person)
+        }
+        let noteRegistration = UICollectionView.CellRegistration<DetailNoteCell, DetailItem> { cell, _, item in
+            guard case .note(let note) = item else { return }
+            cell.configure(note.text)
+        }
+        let headerRegistration = UICollectionView.SupplementaryRegistration<RailHeaderView>(
+            elementKind: UICollectionView.elementKindSectionHeader
+        ) { header, _, _ in
+            header.configure(title: "Cast")
+        }
 
-        eyebrowLabel.attributedText = NSAttributedString(
-            string: "MOVIE",
-            attributes: [
-                .font: UIFont.systemFont(ofSize: 22, weight: .semibold),
-                .foregroundColor: Theme.secondaryText,
-                .kern: 3.5
-            ]
-        )
-        eyebrowLabel.accessibilityLabel = "Movie"
-
-        titleLabel.font = UIFont.systemFont(ofSize: 56, weight: .bold)
-        titleLabel.textColor = Theme.primaryText
-        titleLabel.numberOfLines = 3
-
-        metaLabel.font = UIFont.systemFont(ofSize: 28, weight: .medium)
-        metaLabel.textColor = Theme.gold
-
-        overviewLabel.font = UIFont.systemFont(ofSize: 30, weight: .regular)
-        overviewLabel.textColor = Theme.overviewText
-        overviewLabel.numberOfLines = 0
-
-        textStack.axis = .vertical
-        textStack.alignment = .fill
-        textStack.spacing = 12
-        textStack.addArrangedSubview(eyebrowLabel)
-        textStack.addArrangedSubview(titleLabel)
-        textStack.addArrangedSubview(metaLabel)
-        textStack.addArrangedSubview(overviewLabel)
-        textStack.setCustomSpacing(18, after: metaLabel)
-        textStack.translatesAutoresizingMaskIntoConstraints = false
-
-        textScroll.translatesAutoresizingMaskIntoConstraints = false
-        textScroll.showsVerticalScrollIndicator = true
-        textScroll.clipsToBounds = true
-        textScroll.addSubview(textStack)
-
-        let posterHolder = UIView()
-        posterHolder.translatesAutoresizingMaskIntoConstraints = false
-        posterHolder.addSubview(posterView)
-        NSLayoutConstraint.activate([
-            posterView.topAnchor.constraint(equalTo: posterHolder.topAnchor),
-            posterView.leadingAnchor.constraint(equalTo: posterHolder.leadingAnchor),
-            posterView.trailingAnchor.constraint(equalTo: posterHolder.trailingAnchor),
-            posterView.bottomAnchor.constraint(equalTo: posterHolder.bottomAnchor),
-            posterView.widthAnchor.constraint(equalToConstant: 360),
-            posterView.heightAnchor.constraint(equalToConstant: 540),
-            placeholderView.centerXAnchor.constraint(equalTo: posterView.centerXAnchor),
-            placeholderView.centerYAnchor.constraint(equalTo: posterView.centerYAnchor),
-            placeholderView.widthAnchor.constraint(equalToConstant: 64),
-            placeholderView.heightAnchor.constraint(equalToConstant: 64)
-        ])
-
-        posterHolder.setContentHuggingPriority(.required, for: .horizontal)
-        posterHolder.setContentCompressionResistancePriority(.required, for: .horizontal)
-        textScroll.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        textScroll.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
-        contentRow.axis = .horizontal
-        contentRow.alignment = .top
-        contentRow.spacing = 56
-        contentRow.addArrangedSubview(posterHolder)
-        contentRow.addArrangedSubview(textScroll)
-        contentRow.isHidden = true
+        dataSource = UICollectionViewDiffableDataSource<DetailSection, DetailItem>(collectionView: collectionView) {
+            collectionView, indexPath, item in
+            switch item {
+            case .summary:
+                return collectionView.dequeueConfiguredReusableCell(using: summaryRegistration, for: indexPath, item: item)
+            case .person:
+                return collectionView.dequeueConfiguredReusableCell(using: castRegistration, for: indexPath, item: item)
+            case .note:
+                return collectionView.dequeueConfiguredReusableCell(using: noteRegistration, for: indexPath, item: item)
+            }
+        }
+        dataSource.supplementaryViewProvider = { collectionView, _, indexPath in
+            collectionView.dequeueConfiguredReusableSupplementary(using: headerRegistration, for: indexPath)
+        }
     }
 
     private func configureStatus() {
@@ -212,7 +214,7 @@ final class MovieDetailViewController: UIViewController {
     }
 
     private func installConstraints() {
-        [backButton, contentRow, statusContainer].forEach { item in
+        [backButton, collectionView, statusContainer].forEach { item in
             item.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(item)
         }
@@ -222,23 +224,103 @@ final class MovieDetailViewController: UIViewController {
             backButton.topAnchor.constraint(equalTo: guide.topAnchor, constant: 8),
             backButton.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
 
-            contentRow.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 36),
-            contentRow.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
-            contentRow.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
-            contentRow.bottomAnchor.constraint(lessThanOrEqualTo: guide.bottomAnchor),
-
-            textScroll.heightAnchor.constraint(equalToConstant: 540),
-
-            textStack.topAnchor.constraint(equalTo: textScroll.contentLayoutGuide.topAnchor),
-            textStack.leadingAnchor.constraint(equalTo: textScroll.contentLayoutGuide.leadingAnchor),
-            textStack.trailingAnchor.constraint(equalTo: textScroll.contentLayoutGuide.trailingAnchor),
-            textStack.bottomAnchor.constraint(equalTo: textScroll.contentLayoutGuide.bottomAnchor),
-            textStack.widthAnchor.constraint(equalTo: textScroll.frameLayoutGuide.widthAnchor),
+            collectionView.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 20),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: guide.bottomAnchor),
 
             statusContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             statusContainer.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 24),
             statusLabel.widthAnchor.constraint(equalToConstant: 760)
         ])
+    }
+
+    private func installLayoutIfNeeded() {
+        let side = view.safeAreaInsets.left
+        guard side > 0, side != appliedSideInset else { return }
+        appliedSideInset = side
+        collectionView.setCollectionViewLayout(makeLayout(sideInset: side), animated: false)
+    }
+
+    private func makeLayout(sideInset: CGFloat) -> UICollectionViewLayout {
+        UICollectionViewCompositionalLayout { [weak self] sectionIndex, _ in
+            guard let self = self else {
+                return Self.summarySection(sideInset: sideInset)
+            }
+            return self.sectionLayout(for: sectionIndex, sideInset: sideInset)
+        }
+    }
+
+    private func sectionLayout(for sectionIndex: Int, sideInset: CGFloat) -> NSCollectionLayoutSection {
+        guard let section = dataSource?.sectionIdentifier(for: sectionIndex) else {
+            return Self.summarySection(sideInset: sideInset)
+        }
+        switch section {
+        case .summary:
+            return Self.summarySection(sideInset: sideInset)
+        case .cast:
+            if castNote != nil {
+                return Self.noteSection(sideInset: sideInset)
+            }
+            return Self.castSection(sideInset: sideInset)
+        }
+    }
+
+    private static func summarySection(sideInset: CGFloat) -> NSCollectionLayoutSection {
+        let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1))
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .absolute(Theme.summaryHeight))
+        let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+        let section = NSCollectionLayoutSection(group: group)
+        section.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: sideInset, bottom: 12, trailing: sideInset)
+        section.contentInsetsReference = .none
+        return section
+    }
+
+    private static func castSection(sideInset: CGFloat) -> NSCollectionLayoutSection {
+        let itemSize = NSCollectionLayoutSize(
+            widthDimension: .absolute(Theme.castCardWidth),
+            heightDimension: .fractionalHeight(1)
+        )
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        let groupSize = NSCollectionLayoutSize(
+            widthDimension: .absolute(Theme.castCardWidth),
+            heightDimension: .absolute(Theme.castCardHeight)
+        )
+        let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+        let section = NSCollectionLayoutSection(group: group)
+        section.orthogonalScrollingBehavior = .continuous
+        section.interGroupSpacing = 28
+        section.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: sideInset, bottom: 28, trailing: sideInset)
+        section.contentInsetsReference = .none
+        section.supplementariesFollowContentInsets = true
+        section.boundarySupplementaryItems = [railHeader()]
+        return section
+    }
+
+    private static func noteSection(sideInset: CGFloat) -> NSCollectionLayoutSection {
+        let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1))
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .absolute(64))
+        let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+        let section = NSCollectionLayoutSection(group: group)
+        section.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: sideInset, bottom: 20, trailing: sideInset)
+        section.contentInsetsReference = .none
+        section.supplementariesFollowContentInsets = true
+        section.boundarySupplementaryItems = [railHeader()]
+        return section
+    }
+
+    private static func railHeader() -> NSCollectionLayoutBoundarySupplementaryItem {
+        let headerSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1),
+            heightDimension: .absolute(Theme.railHeaderHeight)
+        )
+        return NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: headerSize,
+            elementKind: UICollectionView.elementKindSectionHeader,
+            alignment: .top
+        )
     }
 
     private func loadDetails() {
@@ -247,37 +329,79 @@ final class MovieDetailViewController: UIViewController {
         let movieID = preview.id
         loadTask = Task { @MainActor [weak self] in
             guard let self = self else { return }
-            do {
-                let movie = try await self.service.movieDetails(id: movieID)
-                guard !Task.isCancelled else { return }
-                self.showMovie(movie)
-            } catch is CancellationError {
-                return
-            } catch let error as URLError where error.code == .cancelled {
-                return
-            } catch {
-                guard !Task.isCancelled else { return }
+            async let movieResult = self.loadMovie(movieID)
+            async let creditsResult = self.loadCredits(movieID)
+            let movie = await movieResult
+            let credits = await creditsResult
+            guard !Task.isCancelled else { return }
+            switch movie {
+            case .success(let movie):
+                self.show(movie: movie, credits: credits)
+            case .failure(let error):
+                guard !self.isCancellation(error) else { return }
                 self.showMessage(self.message(for: error), retry: true)
             }
         }
     }
 
-    private func showMovie(_ movie: Movie) {
+    private func loadMovie(_ id: Int) async -> Result<Movie, Error> {
+        do {
+            return .success(try await service.movieDetails(id: id))
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    private func loadCredits(_ id: Int) async -> Result<MovieCredits, Error> {
+        do {
+            return .success(try await service.credits(for: id))
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    private func show(movie: Movie, credits: Result<MovieCredits, Error>) {
+        let title = movie.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else {
+            showMessage("This movie isn't available right now.", retry: true)
+            return
+        }
+
+        displayedMovie = movie
+        self.title = movie.title
+        switch credits {
+        case .success(let value):
+            directorLine = value.directorLine
+            castMembers = value.billedCast
+            castNote = castMembers.isEmpty ? .castEmpty : nil
+        case .failure:
+            directorLine = nil
+            castMembers = []
+            castNote = .castFailed
+        }
+        applyContent()
+    }
+
+    private func applyContent() {
+        var snapshot = NSDiffableDataSourceSnapshot<DetailSection, DetailItem>()
+        snapshot.appendSections([.summary, .cast])
+        snapshot.appendItems([.summary], toSection: .summary)
+        if let castNote {
+            snapshot.appendItems([.note(castNote)], toSection: .cast)
+        } else {
+            snapshot.appendItems(castMembers.map { DetailItem.person($0) }, toSection: .cast)
+        }
+        dataSource.apply(snapshot, animatingDifferences: false)
+        collectionView.setCollectionViewLayout(makeLayout(sideInset: appliedSideInset), animated: false)
+
         statusContainer.isHidden = true
         spinner.stopAnimating()
-        contentRow.isHidden = false
-        titleLabel.text = movie.title
-        metaLabel.text = movie.metaText
-        metaLabel.isHidden = movie.metaText.isEmpty
-        overviewLabel.text = movie.overviewText
-        loadPoster(for: movie)
+        collectionView.isHidden = false
         refreshFocus()
     }
 
     private func showLoading() {
-        contentRow.isHidden = true
-        imageTask?.cancel()
-        posterView.image = nil
+        collectionView.isHidden = true
         statusContainer.isHidden = false
         statusLabel.text = "Loading \(preview.title)…"
         spinner.isHidden = false
@@ -287,27 +411,13 @@ final class MovieDetailViewController: UIViewController {
     }
 
     private func showMessage(_ text: String, retry: Bool) {
-        contentRow.isHidden = true
-        imageTask?.cancel()
+        collectionView.isHidden = true
         statusContainer.isHidden = false
         statusLabel.text = text
         spinner.stopAnimating()
         spinner.isHidden = true
         retryButton.isHidden = !retry
         refreshFocus()
-    }
-
-    private func loadPoster(for movie: Movie) {
-        imageTask?.cancel()
-        posterView.image = nil
-        placeholderView.isHidden = false
-        guard let url = movie.posterURL else { return }
-        imageTask = Task { @MainActor [weak self] in
-            guard let image = try? await ImageLoader.shared.image(for: url) else { return }
-            guard let self = self, !Task.isCancelled else { return }
-            self.posterView.image = image
-            self.placeholderView.isHidden = true
-        }
     }
 
     private func message(for error: Error) -> String {
@@ -318,6 +428,16 @@ final class MovieDetailViewController: UIViewController {
             return "Check the network connection and try again."
         }
         return "Something went wrong while loading this movie."
+    }
+
+    private func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+        if let urlError = error as? URLError, urlError.code == .cancelled {
+            return true
+        }
+        return false
     }
 
     private func refreshFocus() {
@@ -331,5 +451,36 @@ final class MovieDetailViewController: UIViewController {
 
     @objc private func retryTapped() {
         loadDetails()
+    }
+}
+
+final class DetailNoteCell: UICollectionViewCell {
+    private let label = UILabel()
+
+    override var canBecomeFocused: Bool { false }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        label.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+        label.textColor = Theme.secondaryText
+        label.numberOfLines = 2
+        label.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            label.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            label.centerYAnchor.constraint(equalTo: contentView.centerYAnchor)
+        ])
+        backgroundColor = .clear
+        isAccessibilityElement = true
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("Notes are created in code.")
+    }
+
+    func configure(_ text: String) {
+        label.text = text
+        accessibilityLabel = text
     }
 }

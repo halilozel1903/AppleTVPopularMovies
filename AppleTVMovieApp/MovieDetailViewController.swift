@@ -55,6 +55,9 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     private var dataSource: UICollectionViewDiffableDataSource<DetailSection, DetailItem>!
 
     private let gradientLayer = CAGradientLayer()
+    private let backdropView = UIImageView()
+    private let backdropScrim = CAGradientLayer()
+    private var backdropTask: Task<Void, Never>?
     private let backButton = UIButton(type: .system)
     private var collectionView: UICollectionView!
     private let statusContainer = UIStackView()
@@ -103,6 +106,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         gradientLayer.frame = view.bounds
+        backdropScrim.frame = backdropView.bounds
         installLayoutIfNeeded()
     }
 
@@ -130,6 +134,16 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
         gradientLayer.startPoint = CGPoint(x: 0.2, y: 0)
         gradientLayer.endPoint = CGPoint(x: 0.8, y: 1)
         view.layer.insertSublayer(gradientLayer, at: 0)
+
+        backdropView.contentMode = .scaleAspectFill
+        backdropView.clipsToBounds = true
+        backdropView.alpha = 0.5
+        backdropScrim.colors = [
+            UIColor(red: 0.043, green: 0.047, blue: 0.063, alpha: 0.2).cgColor,
+            Theme.backdrop.cgColor
+        ]
+        backdropScrim.locations = [0.2, 1]
+        backdropView.layer.addSublayer(backdropScrim)
     }
 
     private func configureBackButton() {
@@ -238,6 +252,8 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     }
 
     private func installConstraints() {
+        backdropView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(backdropView)
         [backButton, collectionView, statusContainer].forEach { item in
             item.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(item)
@@ -245,6 +261,11 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
 
         let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
+            backdropView.topAnchor.constraint(equalTo: view.topAnchor),
+            backdropView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            backdropView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            backdropView.heightAnchor.constraint(equalToConstant: 640),
+
             backButton.topAnchor.constraint(equalTo: guide.topAnchor, constant: 8),
             backButton.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
 
@@ -440,6 +461,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
 
         displayedMovie = movie
         self.title = movie.title
+        updateBackdrop(for: movie)
         switch credits {
         case .success(let value):
             directorLine = value.directorLine
@@ -459,6 +481,22 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
             similarNote = .similarFailed
         }
         applyContent()
+    }
+
+    private func updateBackdrop(for movie: Movie) {
+        backdropTask?.cancel()
+        backdropView.isHidden = false
+        guard let url = movie.backdropURL ?? movie.posterURL else {
+            backdropView.image = nil
+            return
+        }
+        backdropTask = Task { @MainActor [weak self] in
+            guard let image = try? await ImageLoader.shared.image(for: url) else { return }
+            guard let self = self, !Task.isCancelled else { return }
+            UIView.transition(with: self.backdropView, duration: 0.28, options: .transitionCrossDissolve) {
+                self.backdropView.image = image
+            }
+        }
     }
 
     private func uniqueMovies(_ movies: [Movie], excluding excludedID: Int) -> [Movie] {
@@ -491,6 +529,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
 
     private func showLoading() {
         collectionView.isHidden = true
+        backdropView.isHidden = true
         statusContainer.isHidden = false
         statusLabel.text = "Loading \(preview.title)…"
         spinner.isHidden = false
@@ -501,6 +540,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
 
     private func showMessage(_ text: String, retry: Bool) {
         collectionView.isHidden = true
+        backdropView.isHidden = true
         statusContainer.isHidden = false
         statusLabel.text = text
         spinner.stopAnimating()

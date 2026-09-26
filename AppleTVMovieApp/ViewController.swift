@@ -43,8 +43,14 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
     private let screenTitleLabel = UILabel()
     private let countLabel = UILabel()
     private let focusedTitleLabel = UILabel()
-    private let metaLabel = UILabel()
+    private let chipRow = UIStackView()
+    private let yearChip = MetadataChip(emphasized: false)
+    private let ratingChip = MetadataChip(emphasized: true)
     private let overviewLabel = UILabel()
+    private let backdropView = UIImageView()
+    private let backdropScrim = CAGradientLayer()
+    private var backdropTask: Task<Void, Never>?
+    private var backdropMovieID: Int?
     private let statusContainer = UIStackView()
     private let spinner = UIActivityIndicatorView(style: .large)
     private let statusLabel = UILabel()
@@ -87,6 +93,7 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         gradientLayer.frame = view.bounds
+        backdropScrim.frame = backdropView.bounds
         installShelfLayoutIfNeeded()
     }
 
@@ -115,6 +122,17 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)
         gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
         view.layer.insertSublayer(gradientLayer, at: 0)
+
+        backdropView.contentMode = .scaleAspectFill
+        backdropView.clipsToBounds = true
+        backdropView.alpha = 0.72
+        backdropScrim.colors = [
+            UIColor(red: 0.043, green: 0.047, blue: 0.063, alpha: 0.15).cgColor,
+            UIColor(red: 0.043, green: 0.047, blue: 0.063, alpha: 0.55).cgColor,
+            Theme.backdrop.cgColor
+        ]
+        backdropScrim.locations = [0, 0.45, 1]
+        backdropView.layer.addSublayer(backdropScrim)
     }
 
     private func configureHeader() {
@@ -153,9 +171,14 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         focusedTitleLabel.lineBreakMode = .byTruncatingTail
         focusedTitleLabel.isAccessibilityElement = false
 
-        metaLabel.font = UIFont.systemFont(ofSize: 26, weight: .medium)
-        metaLabel.textColor = Theme.gold
-        metaLabel.isAccessibilityElement = false
+        chipRow.axis = .horizontal
+        chipRow.alignment = .center
+        chipRow.spacing = 12
+        chipRow.addArrangedSubview(yearChip)
+        chipRow.addArrangedSubview(ratingChip)
+        let chipSpacer = UIView()
+        chipSpacer.setContentHuggingPriority(.fittingSizeLevel, for: .horizontal)
+        chipRow.addArrangedSubview(chipSpacer)
 
         overviewLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
         overviewLabel.textColor = Theme.overviewText
@@ -167,9 +190,9 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         heroStack.alignment = .fill
         heroStack.spacing = 8
         heroStack.addArrangedSubview(focusedTitleLabel)
-        heroStack.addArrangedSubview(metaLabel)
+        heroStack.addArrangedSubview(chipRow)
         heroStack.addArrangedSubview(overviewLabel)
-        heroStack.setCustomSpacing(14, after: metaLabel)
+        heroStack.setCustomSpacing(14, after: chipRow)
         heroStack.isHidden = true
     }
 
@@ -244,6 +267,9 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         topStack.addArrangedSubview(headerStack)
         topStack.addArrangedSubview(heroStack)
 
+        backdropView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(backdropView)
+
         let arrangedViews: [UIView] = [topStack, collectionView, statusContainer]
         arrangedViews.forEach { item in
             item.translatesAutoresizingMaskIntoConstraints = false
@@ -252,6 +278,11 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
 
         let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
+            backdropView.topAnchor.constraint(equalTo: view.topAnchor),
+            backdropView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            backdropView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            backdropView.heightAnchor.constraint(equalToConstant: 520),
+
             topStack.topAnchor.constraint(equalTo: guide.topAnchor, constant: 8),
             topStack.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
             topStack.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
@@ -379,6 +410,7 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         spinner.stopAnimating()
         collectionView.isHidden = false
         heroStack.isHidden = false
+        backdropView.isHidden = false
 
         if let first = loaded.first?.movies.first, let rail = loaded.first?.rail {
             showFocusedMovie(first, in: rail)
@@ -396,13 +428,33 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
 
     private func showFocusedMovie(_ movie: Movie, in rail: MovieRail) {
         focusedTitleLabel.text = movie.title
-        metaLabel.text = movie.metaText
-        metaLabel.isHidden = movie.metaText.isEmpty
+        yearChip.setText(movie.releaseYear)
+        ratingChip.setText(movie.ratingText)
+        chipRow.isHidden = yearChip.isHidden && ratingChip.isHidden
         overviewLabel.text = movie.overviewText
+        updateBackdrop(for: movie)
         setEyebrow(rail.title)
         let count = rails.first { $0.rail == rail }?.movies.count ?? 0
         countLabel.isHidden = count == 0
         countLabel.text = count == 1 ? "1 title" : "\(count) titles"
+    }
+
+    private func updateBackdrop(for movie: Movie) {
+        guard backdropMovieID != movie.id else { return }
+        backdropMovieID = movie.id
+        backdropTask?.cancel()
+        guard let url = movie.backdropURL ?? movie.posterURL else {
+            backdropView.image = nil
+            return
+        }
+        let movieID = movie.id
+        backdropTask = Task { @MainActor [weak self] in
+            guard let image = try? await ImageLoader.shared.image(for: url) else { return }
+            guard let self = self, !Task.isCancelled, self.backdropMovieID == movieID else { return }
+            UIView.transition(with: self.backdropView, duration: 0.28, options: .transitionCrossDissolve) {
+                self.backdropView.image = image
+            }
+        }
     }
 
     private func setEyebrow(_ text: String) {
@@ -421,6 +473,7 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         collectionView.isHidden = true
         heroStack.isHidden = true
         countLabel.isHidden = true
+        backdropView.isHidden = true
         statusContainer.isHidden = false
         statusLabel.text = "Loading movies…"
         spinner.isHidden = false
@@ -433,6 +486,7 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         collectionView.isHidden = true
         heroStack.isHidden = true
         countLabel.isHidden = true
+        backdropView.isHidden = true
         statusContainer.isHidden = false
         statusLabel.text = text
         spinner.stopAnimating()

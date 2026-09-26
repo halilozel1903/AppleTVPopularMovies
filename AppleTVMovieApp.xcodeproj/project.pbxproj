@@ -20,6 +20,7 @@
 		A1F0001123197D1000735BEB /* RailHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0001223197D1000735BEB /* RailHeaderView.swift */; };
 		A1F0002123197D2000735BEB /* MovieInfoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0002223197D2000735BEB /* MovieInfoCell.swift */; };
 		A1F0003123197D2000735BEB /* CastMemberCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0003223197D2000735BEB /* CastMemberCell.swift */; };
+		A1F0004123197D3000735BEB /* MetadataChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0004223197D3000735BEB /* MetadataChip.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 		A1F0001223197D1000735BEB /* RailHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RailHeaderView.swift; sourceTree = "<group>"; };
 		A1F0002223197D2000735BEB /* MovieInfoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieInfoCell.swift; sourceTree = "<group>"; };
 		A1F0003223197D2000735BEB /* CastMemberCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CastMemberCell.swift; sourceTree = "<group>"; };
+		A1F0004223197D3000735BEB /* MetadataChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataChip.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +80,7 @@
 				A1F0001223197D1000735BEB /* RailHeaderView.swift */,
 				A1F0002223197D2000735BEB /* MovieInfoCell.swift */,
 				A1F0003223197D2000735BEB /* CastMemberCell.swift */,
+				A1F0004223197D3000735BEB /* MetadataChip.swift */,
 				29D4226A23197B5000735BEB /* Movie.swift */,
 				29D4226C23197C0000735BEB /* MovieService.swift */,
 				29D4226E23197C0000735BEB /* ImageLoader.swift */,
@@ -169,6 +172,7 @@
 				A1F0001123197D1000735BEB /* RailHeaderView.swift in Sources */,
 				A1F0002123197D2000735BEB /* MovieInfoCell.swift in Sources */,
 				A1F0003123197D2000735BEB /* CastMemberCell.swift in Sources */,
+				A1F0004123197D3000735BEB /* MetadataChip.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

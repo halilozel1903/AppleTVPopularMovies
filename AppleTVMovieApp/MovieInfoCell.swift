@@ -13,7 +13,9 @@ final class MovieInfoCell: UICollectionViewCell {
     private let placeholderView = UIImageView()
     private let eyebrowLabel = UILabel()
     private let titleLabel = UILabel()
-    private let metaLabel = UILabel()
+    private let chipRow = UIStackView()
+    private let yearChip = MetadataChip(emphasized: false)
+    private let ratingChip = MetadataChip(emphasized: true)
     private let overviewLabel = UILabel()
     private let directorLabel = UILabel()
     private let textStack = UIStackView()
@@ -35,10 +37,11 @@ final class MovieInfoCell: UICollectionViewCell {
     func configure(movie: Movie, directorLine: String?) {
         representedID = movie.id
         titleLabel.text = movie.title
-        metaLabel.text = movie.metaText
-        metaLabel.isHidden = movie.metaText.isEmpty
+        yearChip.setText(movie.releaseYear)
+        ratingChip.setText(movie.ratingText)
+        chipRow.isHidden = yearChip.isHidden && ratingChip.isHidden
         overviewLabel.text = movie.overviewText
-        directorLabel.text = directorLine
+        directorLabel.attributedText = Self.directorText(directorLine)
         directorLabel.isHidden = directorLine == nil
         accessibilityLabel = [movie.title, movie.metaText, movie.overviewText, directorLine]
             .compactMap { $0 }
@@ -99,8 +102,11 @@ final class MovieInfoCell: UICollectionViewCell {
         titleLabel.textColor = Theme.primaryText
         titleLabel.numberOfLines = 2
 
-        metaLabel.font = UIFont.systemFont(ofSize: 28, weight: .medium)
-        metaLabel.textColor = Theme.gold
+        chipRow.axis = .horizontal
+        chipRow.alignment = .center
+        chipRow.spacing = 12
+        chipRow.addArrangedSubview(yearChip)
+        chipRow.addArrangedSubview(ratingChip)
 
         overviewLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
         overviewLabel.textColor = Theme.overviewText
@@ -117,10 +123,10 @@ final class MovieInfoCell: UICollectionViewCell {
         textStack.translatesAutoresizingMaskIntoConstraints = false
         textStack.addArrangedSubview(eyebrowLabel)
         textStack.addArrangedSubview(titleLabel)
-        textStack.addArrangedSubview(metaLabel)
+        textStack.addArrangedSubview(chipRow)
         textStack.addArrangedSubview(overviewLabel)
         textStack.addArrangedSubview(directorLabel)
-        textStack.setCustomSpacing(16, after: metaLabel)
+        textStack.setCustomSpacing(16, after: chipRow)
         textStack.setCustomSpacing(18, after: overviewLabel)
 
         contentView.addSubview(posterView)
@@ -143,5 +149,25 @@ final class MovieInfoCell: UICollectionViewCell {
             textStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             textStack.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor)
         ])
+    }
+
+    private static func directorText(_ line: String?) -> NSAttributedString? {
+        guard let line, line.hasPrefix("Directed by ") else {
+            guard let line else { return nil }
+            return NSAttributedString(string: line, attributes: [
+                .font: UIFont.systemFont(ofSize: 30, weight: .semibold),
+                .foregroundColor: Theme.primaryText
+            ])
+        }
+        let name = String(line.dropFirst("Directed by ".count))
+        let text = NSMutableAttributedString(string: "Directed by ", attributes: [
+            .font: UIFont.systemFont(ofSize: 28, weight: .medium),
+            .foregroundColor: Theme.secondaryText
+        ])
+        text.append(NSAttributedString(string: name, attributes: [
+            .font: UIFont.systemFont(ofSize: 30, weight: .semibold),
+            .foregroundColor: Theme.primaryText
+        ]))
+        return text
     }
 }

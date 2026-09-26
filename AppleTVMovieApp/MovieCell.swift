@@ -82,7 +82,7 @@ final class MovieCell: UICollectionViewCell {
             guard let self = self else { return }
             let scale: CGFloat = focused ? Theme.focusScale : 1
             self.transform = CGAffineTransform(scaleX: scale, y: scale)
-            self.posterView.layer.borderWidth = focused ? 4 : 0
+            self.posterView.layer.borderWidth = focused ? Theme.focusRingWidth : 0
             self.shadowView.layer.shadowOpacity = focused ? 0.42 : 0
             self.titleLabel.textColor = focused ? Theme.primaryText : Theme.secondaryText
         }

@@ -46,6 +46,7 @@ struct Movie: Decodable, Hashable, Sendable {
     let title: String
     let overview: String?
     let posterPath: String?
+    let backdropPath: String?
     let releaseDate: String?
     let voteAverage: Double?
 
@@ -54,6 +55,7 @@ struct Movie: Decodable, Hashable, Sendable {
         case title
         case overview
         case posterPath = "poster_path"
+        case backdropPath = "backdrop_path"
         case releaseDate = "release_date"
         case voteAverage = "vote_average"
     }
@@ -68,6 +70,10 @@ struct Movie: Decodable, Hashable, Sendable {
 
     var posterURL: URL? {
         TMDbImage.url(path: posterPath, size: "w780")
+    }
+
+    var backdropURL: URL? {
+        TMDbImage.url(path: backdropPath, size: "w1280")
     }
 
     var releaseYear: String? {

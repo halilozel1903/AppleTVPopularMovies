@@ -9,16 +9,27 @@
 import UIKit
 
 final class RailHeaderView: UICollectionReusableView {
+    private let accent = UIView()
     private let titleLabel = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        accent.backgroundColor = Theme.gold
+        accent.layer.cornerRadius = 2
+        accent.translatesAutoresizingMaskIntoConstraints = false
+
         titleLabel.font = UIFont.systemFont(ofSize: 36, weight: .bold)
         titleLabel.textColor = Theme.primaryText
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(accent)
         addSubview(titleLabel)
         NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
+            accent.leadingAnchor.constraint(equalTo: leadingAnchor),
+            accent.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+            accent.widthAnchor.constraint(equalToConstant: 4),
+            accent.heightAnchor.constraint(equalToConstant: 22),
+
+            titleLabel.leadingAnchor.constraint(equalTo: accent.trailingAnchor, constant: 14),
             titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
             titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2)
         ])

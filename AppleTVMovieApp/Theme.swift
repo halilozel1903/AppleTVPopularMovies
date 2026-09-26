@@ -24,7 +24,8 @@ enum Theme {
     static let cardHeight: CGFloat = 498
     static let shelfSpacing: CGFloat = 36
     static let posterCornerRadius: CGFloat = 18
-    static let focusScale: CGFloat = 1.06
+    static let focusScale: CGFloat = 1.08
+    static let focusRingWidth: CGFloat = 5
     static let railHeaderHeight: CGFloat = 48
     static let detailPosterWidth: CGFloat = 200
     static let detailPosterHeight: CGFloat = 300

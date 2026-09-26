@@ -75,7 +75,7 @@ final class CastMemberCell: UICollectionViewCell {
             guard let self = self else { return }
             let scale: CGFloat = focused ? Theme.focusScale : 1
             self.transform = CGAffineTransform(scaleX: scale, y: scale)
-            self.photoView.layer.borderWidth = focused ? 4 : 0
+            self.photoView.layer.borderWidth = focused ? Theme.focusRingWidth : 0
             self.shadowView.layer.shadowOpacity = focused ? 0.42 : 0
             self.nameLabel.textColor = focused ? Theme.primaryText : Theme.secondaryText
         }

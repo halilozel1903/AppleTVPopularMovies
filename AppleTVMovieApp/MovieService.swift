@@ -54,10 +54,6 @@ struct MovieService: Sendable {
         return try await decode(MoviePage.self, from: try await fetch(url)).results
     }
 
-    func popularMovies() async throws -> [Movie] {
-        try await movies(in: .popular)
-    }
-
     func movieDetails(id: Int) async throws -> Movie {
         try await decode(Movie.self, from: try await fetch(try movieURL(id: id)))
     }

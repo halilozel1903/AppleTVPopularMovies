@@ -25,4 +25,5 @@ enum Theme {
     static let shelfSpacing: CGFloat = 36
     static let posterCornerRadius: CGFloat = 18
     static let focusScale: CGFloat = 1.06
+    static let railHeaderHeight: CGFloat = 48
 }

@@ -14,6 +14,7 @@
 		29D42266231974DA00735BEB /* MovieCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D42265231974DA00735BEB /* MovieCell.swift */; };
 		29D4226B23197B5000735BEB /* Movie.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D4226A23197B5000735BEB /* Movie.swift */; };
 		29D4226D23197C0000735BEB /* MovieService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D4226C23197C0000735BEB /* MovieService.swift */; };
+		29D4226F23197C0000735BEB /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D4226E23197C0000735BEB /* ImageLoader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		29D42265231974DA00735BEB /* MovieCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieCell.swift; sourceTree = "<group>"; };
 		29D4226A23197B5000735BEB /* Movie.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Movie.swift; sourceTree = "<group>"; };
 		29D4226C23197C0000735BEB /* MovieService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieService.swift; sourceTree = "<group>"; };
+		29D4226E23197C0000735BEB /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +65,7 @@
 				29D42265231974DA00735BEB /* MovieCell.swift */,
 				29D4226A23197B5000735BEB /* Movie.swift */,
 				29D4226C23197C0000735BEB /* MovieService.swift */,
+				29D4226E23197C0000735BEB /* ImageLoader.swift */,
 				29D4225A23196C5D00735BEB /* Main.storyboard */,
 				29D4225D23196C5E00735BEB /* Assets.xcassets */,
 				29D4225F23196C5E00735BEB /* Info.plist */,
@@ -144,6 +147,7 @@
 				29D4225723196C5D00735BEB /* AppDelegate.swift in Sources */,
 				29D4226B23197B5000735BEB /* Movie.swift in Sources */,
 				29D4226D23197C0000735BEB /* MovieService.swift in Sources */,
+				29D4226F23197C0000735BEB /* ImageLoader.swift in Sources */,
 				29D42266231974DA00735BEB /* MovieCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

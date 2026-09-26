@@ -9,22 +9,33 @@
 import UIKit
 
 class MovieCell: UICollectionViewCell {
-    
-    // cell gosterilecek icerikler
-    
+
     @IBOutlet weak var movieImage: UIImageView!
     @IBOutlet weak var movieName: UILabel!
-    
+
+    private var loadTask: Task<Void, Never>?
+    private var representedID: Int?
+
     func configureCell(movie: Movie) {
+        representedID = movie.id
         movieName.text = movie.title
         movieImage.image = nil
+        loadTask?.cancel()
 
-        guard let url = movie.posterURL,
-              let data = try? Data(contentsOf: url),
-              let image = UIImage(data: data) else {
-            return
+        guard let url = movie.posterURL else { return }
+        let movieID = movie.id
+        loadTask = Task { @MainActor [weak self] in
+            guard let image = try? await ImageLoader.shared.image(for: url) else { return }
+            guard let self = self, !Task.isCancelled, self.representedID == movieID else { return }
+            self.movieImage.image = image
         }
-        movieImage.image = image
     }
-    
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        loadTask?.cancel()
+        loadTask = nil
+        representedID = nil
+        movieImage.image = nil
+    }
 }

@@ -13,6 +13,7 @@
 		29D4225E23196C5E00735BEB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 29D4225D23196C5E00735BEB /* Assets.xcassets */; };
 		29D42266231974DA00735BEB /* MovieCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D42265231974DA00735BEB /* MovieCell.swift */; };
 		29D4226B23197B5000735BEB /* Movie.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D4226A23197B5000735BEB /* Movie.swift */; };
+		29D4226D23197C0000735BEB /* MovieService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D4226C23197C0000735BEB /* MovieService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		29D4225F23196C5E00735BEB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		29D42265231974DA00735BEB /* MovieCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieCell.swift; sourceTree = "<group>"; };
 		29D4226A23197B5000735BEB /* Movie.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Movie.swift; sourceTree = "<group>"; };
+		29D4226C23197C0000735BEB /* MovieService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +62,7 @@
 				29D4225823196C5D00735BEB /* ViewController.swift */,
 				29D42265231974DA00735BEB /* MovieCell.swift */,
 				29D4226A23197B5000735BEB /* Movie.swift */,
+				29D4226C23197C0000735BEB /* MovieService.swift */,
 				29D4225A23196C5D00735BEB /* Main.storyboard */,
 				29D4225D23196C5E00735BEB /* Assets.xcassets */,
 				29D4225F23196C5E00735BEB /* Info.plist */,
@@ -140,6 +143,7 @@
 				29D4225923196C5D00735BEB /* ViewController.swift in Sources */,
 				29D4225723196C5D00735BEB /* AppDelegate.swift in Sources */,
 				29D4226B23197B5000735BEB /* Movie.swift in Sources */,
+				29D4226D23197C0000735BEB /* MovieService.swift in Sources */,
 				29D42266231974DA00735BEB /* MovieCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

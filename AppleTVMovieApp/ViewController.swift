@@ -11,12 +11,10 @@ import UIKit
 class ViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
 
     @IBOutlet weak var collectionView: UICollectionView!
-    
-    // base url
-    let URL_BASE = "https://api.themoviedb.org/3/movie/popular?api_key=45dfdbd49fa1f1da1f5b75fd60217433"
 
-    // movies nesnesi
-    var movies = [Movie]()
+    private let service = MovieService()
+    private var loadTask: Task<Void, Never>?
+    private var movies = [Movie]()
     
     var defaultSize = CGSize(width: 325,height: 489)
     var focusSize = CGSize(width: 360,height: 520)
@@ -28,54 +26,31 @@ class ViewController: UIViewController, UICollectionViewDelegate, UICollectionVi
         collectionView.delegate = self
         collectionView.dataSource = self
         
-        // verileri getirme fonksiyonu
-        downloadData()
+        loadMovies()
     }
-    
-    func downloadData()  {
-        let url = NSURL(string: URL_BASE)!
-        let request = NSURLRequest(url: url as URL)
-        let session = URLSession.shared
-        let task = session.dataTask(with: request as URLRequest){
-            (data,response,error)->
-            Void in
-            
-            if error != nil{
-                print(error.debugDescription)
-            }else{
-                do{
-                    let dictionary = try JSONSerialization.jsonObject(with: data!, options: .allowFragments) as! Dictionary<String,AnyObject>
-                    
-                    if let results = dictionary["results"] as? [Dictionary<String,AnyObject>]{
-                       // print(results)
-                        
-                        for object in results{
-                            
-                            let movie = Movie(movieDictionary: object)
-                            self.movies.append(movie)
-                        }
-                        
-                        // gelen verileri main thread ile islem yap
-                        DispatchQueue.main.async {
-                        self.collectionView.reloadData()
-                                    
-                        }
-                        
-                        
-                        
-                    
-                    }
-                }catch{
-                    
-                }
-                
+
+    private func loadMovies() {
+        loadTask?.cancel()
+        loadTask = Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            do {
+                let results = try await self.service.popularMovies()
+                guard !Task.isCancelled else { return }
+                self.movies = self.uniqueMovies(results)
+                self.collectionView.reloadData()
+            } catch is CancellationError {
+                return
+            } catch let error as URLError where error.code == .cancelled {
+                return
+            } catch {
+                print(error.localizedDescription)
             }
-            
         }
-        
-        task.resume()
-        
-        
+    }
+
+    private func uniqueMovies(_ movies: [Movie]) -> [Movie] {
+        var seen = Set<Int>()
+        return movies.filter { seen.insert($0.id).inserted }
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {

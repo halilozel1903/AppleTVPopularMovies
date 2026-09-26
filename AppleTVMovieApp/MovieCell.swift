@@ -16,19 +16,15 @@ class MovieCell: UICollectionViewCell {
     @IBOutlet weak var movieName: UILabel!
     
     func configureCell(movie: Movie) {
-        
-        if let title = movie.title{
-            
-            movieName.text = title
+        movieName.text = movie.title
+        movieImage.image = nil
+
+        guard let url = movie.posterURL,
+              let data = try? Data(contentsOf: url),
+              let image = UIImage(data: data) else {
+            return
         }
-        
-        if let path = movie.posterPath{
-            
-            let url = NSURL(string: path)!
-            let data = NSData(contentsOf: url as URL)!
-            let image = UIImage(data: data as Data)
-            self.movieImage.image = image
-        }
+        movieImage.image = image
     }
     
 }

@@ -312,7 +312,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
         let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .absolute(Theme.summaryHeight))
         let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
         let section = NSCollectionLayoutSection(group: group)
-        section.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: sideInset, bottom: 12, trailing: sideInset)
+        section.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: sideInset, bottom: 4, trailing: sideInset)
         section.contentInsetsReference = .none
         return section
     }
@@ -331,7 +331,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
         let section = NSCollectionLayoutSection(group: group)
         section.orthogonalScrollingBehavior = .continuous
         section.interGroupSpacing = 28
-        section.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: sideInset, bottom: 28, trailing: sideInset)
+        section.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: sideInset, bottom: 8, trailing: sideInset)
         section.contentInsetsReference = .none
         section.supplementariesFollowContentInsets = true
         section.boundarySupplementaryItems = [railHeader()]

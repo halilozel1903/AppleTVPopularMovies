@@ -60,10 +60,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     private var backdropTask: Task<Void, Never>?
     private let backButton = UIButton(type: .system)
     private var collectionView: UICollectionView!
-    private let statusContainer = UIStackView()
-    private let spinner = UIActivityIndicatorView(style: .large)
-    private let statusLabel = UILabel()
-    private let retryButton = UIButton(type: .system)
+    private let statusPanel = StatusPanel()
 
     init(movie: Movie, service: MovieService) {
         self.preview = movie
@@ -76,8 +73,8 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     }
 
     override var preferredFocusEnvironments: [UIFocusEnvironment] {
-        if !retryButton.isHidden {
-            return [retryButton]
+        if !statusPanel.retryButton.isHidden {
+            return [statusPanel.retryButton]
         }
         if isViewLoaded, collectionView != nil, !collectionView.isHidden {
             return [collectionView]
@@ -113,7 +110,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
         coordinator.addCoordinatedAnimations { [weak self] in
             guard let self = self else { return }
-            for button in [self.backButton, self.retryButton] {
+            for button in [self.backButton, self.statusPanel.retryButton] {
                 let scale: CGFloat = button.isFocused ? 1.06 : 1
                 button.transform = CGAffineTransform(scaleX: scale, y: scale)
             }
@@ -223,38 +220,15 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     }
 
     private func configureStatus() {
-        spinner.color = .white
-        spinner.hidesWhenStopped = true
-
-        statusLabel.font = UIFont.systemFont(ofSize: 30, weight: .regular)
-        statusLabel.textColor = Theme.primaryText
-        statusLabel.textAlignment = .center
-        statusLabel.numberOfLines = 0
-        statusLabel.preferredMaxLayoutWidth = 760
-        statusLabel.accessibilityIdentifier = "detail.status"
-
-        var config = UIButton.Configuration.filled()
-        config.title = "Try Again"
-        config.baseBackgroundColor = .white
-        config.baseForegroundColor = Theme.backdrop
-        config.cornerStyle = .medium
-        config.contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 36, bottom: 16, trailing: 36)
-        retryButton.configuration = config
-        retryButton.accessibilityIdentifier = "detail.retry"
-        retryButton.addTarget(self, action: #selector(retryTapped), for: .primaryActionTriggered)
-
-        statusContainer.axis = .vertical
-        statusContainer.alignment = .center
-        statusContainer.spacing = 22
-        statusContainer.addArrangedSubview(spinner)
-        statusContainer.addArrangedSubview(statusLabel)
-        statusContainer.addArrangedSubview(retryButton)
+        statusPanel.setStatusIdentifier("detail.status")
+        statusPanel.setRetryIdentifier("detail.retry")
+        statusPanel.retryButton.addTarget(self, action: #selector(retryTapped), for: .primaryActionTriggered)
     }
 
     private func installConstraints() {
         backdropView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(backdropView)
-        [backButton, collectionView, statusContainer].forEach { item in
+        [backButton, collectionView, statusPanel].forEach { item in
             item.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(item)
         }
@@ -274,9 +248,8 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: guide.bottomAnchor),
 
-            statusContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            statusContainer.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 24),
-            statusLabel.widthAnchor.constraint(equalToConstant: 760)
+            statusPanel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            statusPanel.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 24)
         ])
     }
 
@@ -423,7 +396,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
                 self.show(movie: movie, credits: credits, similar: similar)
             case .failure(let error):
                 guard !self.isCancellation(error) else { return }
-                self.showMessage(self.message(for: error), retry: true)
+                self.showFailure(error)
             }
         }
     }
@@ -455,7 +428,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     private func show(movie: Movie, credits: Result<MovieCredits, Error>, similar: Result<[Movie], Error>) {
         let title = movie.title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else {
-            showMessage("This movie isn't available right now.", retry: true)
+            showEmpty()
             return
         }
 
@@ -521,8 +494,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
         dataSource.apply(snapshot, animatingDifferences: false)
         collectionView.setCollectionViewLayout(makeLayout(sideInset: appliedSideInset), animated: false)
 
-        statusContainer.isHidden = true
-        spinner.stopAnimating()
+        statusPanel.isHidden = true
         collectionView.isHidden = false
         refreshFocus()
     }
@@ -530,33 +502,50 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     private func showLoading() {
         collectionView.isHidden = true
         backdropView.isHidden = true
-        statusContainer.isHidden = false
-        statusLabel.text = "Loading \(preview.title)…"
-        spinner.isHidden = false
-        spinner.startAnimating()
-        retryButton.isHidden = true
+        statusPanel.isHidden = false
+        statusPanel.showLoading(title: "Loading", detail: preview.title)
         refreshFocus()
     }
 
-    private func showMessage(_ text: String, retry: Bool) {
+    private func showEmpty() {
+        hideContent()
+        statusPanel.showNotice(
+            symbol: "film",
+            title: "This movie isn't available",
+            detail: "There's nothing to show for this title.",
+            retry: true
+        )
+        refreshFocus()
+    }
+
+    private func showFailure(_ error: Error) {
+        hideContent()
+        let notice = detailNotice(for: error)
+        statusPanel.showNotice(symbol: notice.symbol, title: notice.title, detail: notice.detail, retry: true)
+        refreshFocus()
+    }
+
+    private func hideContent() {
         collectionView.isHidden = true
         backdropView.isHidden = true
-        statusContainer.isHidden = false
-        statusLabel.text = text
-        spinner.stopAnimating()
-        spinner.isHidden = true
-        retryButton.isHidden = !retry
-        refreshFocus()
+        statusPanel.isHidden = false
     }
 
-    private func message(for error: Error) -> String {
+    private func detailNotice(for error: Error) -> (symbol: String, title: String, detail: String) {
         if let serviceError = error as? MovieServiceError {
-            return serviceError.localizedDescription
+            switch serviceError {
+            case .missingAPIKey:
+                return ("key.fill", "Add your TMDb key", serviceError.localizedDescription)
+            case .server:
+                return ("exclamationmark.triangle", "The movie service failed", serviceError.localizedDescription)
+            case .invalidResponse:
+                return ("exclamationmark.triangle", "Couldn't read this movie", serviceError.localizedDescription)
+            }
         }
         if error is URLError {
-            return "Check the network connection and try again."
+            return ("wifi.slash", "No connection", "Check the network connection and try again.")
         }
-        return "Something went wrong while loading this movie."
+        return ("exclamationmark.triangle", "Something went wrong", "This movie couldn't be loaded.")
     }
 
     private func isCancellation(_ error: Error) -> Bool {
@@ -584,19 +573,30 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
 }
 
 final class DetailNoteCell: UICollectionViewCell {
+    private let iconView = UIImageView()
     private let label = UILabel()
 
     override var canBecomeFocused: Bool { true }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        iconView.image = UIImage(systemName: "rectangle.dashed")
+        iconView.tintColor = Theme.secondaryText
+        iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 26, weight: .medium)
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+
         label.font = UIFont.systemFont(ofSize: 28, weight: .regular)
         label.textColor = Theme.secondaryText
         label.numberOfLines = 2
         label.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(iconView)
         contentView.addSubview(label)
         NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            iconView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            iconView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 32),
+            iconView.heightAnchor.constraint(equalToConstant: 32),
+            label.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 14),
             label.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             label.centerYAnchor.constraint(equalTo: contentView.centerYAnchor)
         ])

@@ -51,18 +51,15 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
     private let backdropScrim = CAGradientLayer()
     private var backdropTask: Task<Void, Never>?
     private var backdropMovieID: Int?
-    private let statusContainer = UIStackView()
-    private let spinner = UIActivityIndicatorView(style: .large)
-    private let statusLabel = UILabel()
-    private let retryButton = UIButton(type: .system)
+    private let statusPanel = StatusPanel()
     private var collectionView: UICollectionView!
 
     override var preferredFocusEnvironments: [UIFocusEnvironment] {
         guard isViewLoaded, collectionView != nil else {
             return super.preferredFocusEnvironments
         }
-        if !retryButton.isHidden {
-            return [retryButton]
+        if !statusPanel.retryButton.isHidden {
+            return [statusPanel.retryButton]
         }
         if !collectionView.isHidden {
             return [collectionView]
@@ -197,32 +194,9 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
     }
 
     private func configureStatus() {
-        spinner.color = .white
-        spinner.hidesWhenStopped = true
-
-        statusLabel.font = UIFont.systemFont(ofSize: 30, weight: .regular)
-        statusLabel.textColor = Theme.primaryText
-        statusLabel.textAlignment = .center
-        statusLabel.numberOfLines = 0
-        statusLabel.preferredMaxLayoutWidth = 760
-        statusLabel.accessibilityIdentifier = "catalog.status"
-
-        var config = UIButton.Configuration.filled()
-        config.title = "Try Again"
-        config.baseBackgroundColor = .white
-        config.baseForegroundColor = Theme.backdrop
-        config.cornerStyle = .medium
-        config.contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 36, bottom: 16, trailing: 36)
-        retryButton.configuration = config
-        retryButton.accessibilityIdentifier = "catalog.retry"
-        retryButton.addTarget(self, action: #selector(retryTapped), for: .primaryActionTriggered)
-
-        statusContainer.axis = .vertical
-        statusContainer.alignment = .center
-        statusContainer.spacing = 22
-        statusContainer.addArrangedSubview(spinner)
-        statusContainer.addArrangedSubview(statusLabel)
-        statusContainer.addArrangedSubview(retryButton)
+        statusPanel.setStatusIdentifier("catalog.status")
+        statusPanel.setRetryIdentifier("catalog.retry")
+        statusPanel.retryButton.addTarget(self, action: #selector(retryTapped), for: .primaryActionTriggered)
     }
 
     private func configureCollection() {
@@ -270,7 +244,7 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         backdropView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(backdropView)
 
-        let arrangedViews: [UIView] = [topStack, collectionView, statusContainer]
+        let arrangedViews: [UIView] = [topStack, collectionView, statusPanel]
         arrangedViews.forEach { item in
             item.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(item)
@@ -292,11 +266,10 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: guide.bottomAnchor),
 
-            statusContainer.centerXAnchor.constraint(equalTo: collectionView.centerXAnchor),
-            statusContainer.centerYAnchor.constraint(equalTo: collectionView.centerYAnchor),
-            statusContainer.leadingAnchor.constraint(greaterThanOrEqualTo: guide.leadingAnchor),
-            statusContainer.trailingAnchor.constraint(lessThanOrEqualTo: guide.trailingAnchor),
-            statusLabel.widthAnchor.constraint(equalToConstant: 760)
+            statusPanel.centerXAnchor.constraint(equalTo: collectionView.centerXAnchor),
+            statusPanel.centerYAnchor.constraint(equalTo: collectionView.centerYAnchor),
+            statusPanel.leadingAnchor.constraint(greaterThanOrEqualTo: guide.leadingAnchor),
+            statusPanel.trailingAnchor.constraint(lessThanOrEqualTo: guide.trailingAnchor)
         ])
     }
 
@@ -393,10 +366,10 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
             return
         }
         if let firstFailure {
-            showMessage(message(for: firstFailure), retry: true)
+            showFailure(firstFailure)
             return
         }
-        showMessage("No movies to show right now.", retry: true)
+        showEmpty()
     }
 
     private func uniqueMovies(_ movies: [Movie]) -> [Movie] {
@@ -406,8 +379,7 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
 
     private func showRails(_ loaded: [LoadedRail]) {
         rails = loaded
-        statusContainer.isHidden = true
-        spinner.stopAnimating()
+        statusPanel.isHidden = true
         collectionView.isHidden = false
         heroStack.isHidden = false
         backdropView.isHidden = false
@@ -474,38 +446,55 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         heroStack.isHidden = true
         countLabel.isHidden = true
         backdropView.isHidden = true
-        statusContainer.isHidden = false
-        statusLabel.text = "Loading movies…"
-        spinner.isHidden = false
-        spinner.startAnimating()
-        retryButton.isHidden = true
+        statusPanel.isHidden = false
+        statusPanel.showLoading(
+            title: "Loading movies",
+            detail: "Popular, top rated, now playing, and upcoming."
+        )
         refreshFocus()
     }
 
-    private func showMessage(_ text: String, retry: Bool) {
+    private func showEmpty() {
+        hideShelf()
+        statusPanel.showNotice(
+            symbol: "film.stack",
+            title: "No movies right now",
+            detail: "Popular, top rated, now playing, and upcoming are empty.",
+            retry: true
+        )
+        refreshFocus()
+    }
+
+    private func showFailure(_ error: Error) {
+        hideShelf()
+        let notice = catalogNotice(for: error)
+        statusPanel.showNotice(symbol: notice.symbol, title: notice.title, detail: notice.detail, retry: true)
+        refreshFocus()
+    }
+
+    private func hideShelf() {
         collectionView.isHidden = true
         heroStack.isHidden = true
         countLabel.isHidden = true
         backdropView.isHidden = true
-        statusContainer.isHidden = false
-        statusLabel.text = text
-        spinner.stopAnimating()
-        spinner.isHidden = true
-        retryButton.isHidden = !retry
-        refreshFocus()
+        statusPanel.isHidden = false
     }
 
-    private func message(for error: Error) -> String {
+    private func catalogNotice(for error: Error) -> (symbol: String, title: String, detail: String) {
         if let serviceError = error as? MovieServiceError {
-            return serviceError.localizedDescription
-        }
-        if error is CancellationError {
-            return "Something went wrong while loading movies."
+            switch serviceError {
+            case .missingAPIKey:
+                return ("key.fill", "Add your TMDb key", serviceError.localizedDescription)
+            case .server:
+                return ("exclamationmark.triangle", "The movie service failed", serviceError.localizedDescription)
+            case .invalidResponse:
+                return ("exclamationmark.triangle", "Couldn't read the movies", serviceError.localizedDescription)
+            }
         }
         if error is URLError {
-            return "Check the network connection and try again."
+            return ("wifi.slash", "No connection", "Check the network connection and try again.")
         }
-        return "Something went wrong while loading movies."
+        return ("exclamationmark.triangle", "Something went wrong", "The movies couldn't be loaded.")
     }
 
     private func refreshFocus() {

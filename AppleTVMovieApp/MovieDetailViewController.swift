@@ -12,17 +12,21 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     private enum DetailSection: Hashable {
         case summary
         case cast
+        case similar
     }
 
     private enum DetailItem: Hashable {
         case summary
         case person(CastMember)
+        case similar(Movie)
         case note(DetailNote)
     }
 
     private enum DetailNote: Hashable {
         case castEmpty
         case castFailed
+        case similarEmpty
+        case similarFailed
 
         var text: String {
             switch self {
@@ -30,6 +34,10 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
                 return "No cast listed."
             case .castFailed:
                 return "Cast isn't available right now."
+            case .similarEmpty:
+                return "No similar titles right now."
+            case .similarFailed:
+                return "Similar titles aren't available right now."
             }
         }
     }
@@ -41,6 +49,8 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     private var directorLine: String?
     private var castMembers: [CastMember] = []
     private var castNote: DetailNote?
+    private var similarMovies: [Movie] = []
+    private var similarNote: DetailNote?
     private var appliedSideInset: CGFloat = -1
     private var dataSource: UICollectionViewDiffableDataSource<DetailSection, DetailItem>!
 
@@ -107,7 +117,11 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        collectionView.deselectItem(at: indexPath, animated: false)
+        defer { collectionView.deselectItem(at: indexPath, animated: false) }
+        guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
+        guard case .similar(let movie) = item else { return }
+        let detail = MovieDetailViewController(movie: movie, service: service)
+        navigationController?.pushViewController(detail, animated: true)
     }
 
     private func configureAppearance() {
@@ -158,14 +172,22 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
             guard case .person(let person) = item else { return }
             cell.configure(with: person)
         }
+        let similarRegistration = UICollectionView.CellRegistration<MovieCell, DetailItem> { cell, _, item in
+            guard case .similar(let movie) = item else { return }
+            cell.configure(
+                with: movie,
+                posterHeight: Theme.relatedPosterHeight,
+                titleHeight: Theme.relatedTitleHeight
+            )
+        }
         let noteRegistration = UICollectionView.CellRegistration<DetailNoteCell, DetailItem> { cell, _, item in
             guard case .note(let note) = item else { return }
             cell.configure(note.text)
         }
         let headerRegistration = UICollectionView.SupplementaryRegistration<RailHeaderView>(
             elementKind: UICollectionView.elementKindSectionHeader
-        ) { header, _, _ in
-            header.configure(title: "Cast")
+        ) { [weak self] header, _, indexPath in
+            header.configure(title: self?.headerTitle(for: indexPath.section) ?? "")
         }
 
         dataSource = UICollectionViewDiffableDataSource<DetailSection, DetailItem>(collectionView: collectionView) {
@@ -175,6 +197,8 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
                 return collectionView.dequeueConfiguredReusableCell(using: summaryRegistration, for: indexPath, item: item)
             case .person:
                 return collectionView.dequeueConfiguredReusableCell(using: castRegistration, for: indexPath, item: item)
+            case .similar:
+                return collectionView.dequeueConfiguredReusableCell(using: similarRegistration, for: indexPath, item: item)
             case .note:
                 return collectionView.dequeueConfiguredReusableCell(using: noteRegistration, for: indexPath, item: item)
             }
@@ -263,6 +287,22 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
                 return Self.noteSection(sideInset: sideInset)
             }
             return Self.castSection(sideInset: sideInset)
+        case .similar:
+            if similarNote != nil {
+                return Self.noteSection(sideInset: sideInset)
+            }
+            return Self.similarSection(sideInset: sideInset)
+        }
+    }
+
+    private func headerTitle(for sectionIndex: Int) -> String {
+        switch dataSource?.sectionIdentifier(for: sectionIndex) {
+        case .cast:
+            return "Cast"
+        case .similar:
+            return "Similar"
+        case .summary, .none:
+            return ""
         }
     }
 
@@ -292,6 +332,27 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
         section.orthogonalScrollingBehavior = .continuous
         section.interGroupSpacing = 28
         section.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: sideInset, bottom: 28, trailing: sideInset)
+        section.contentInsetsReference = .none
+        section.supplementariesFollowContentInsets = true
+        section.boundarySupplementaryItems = [railHeader()]
+        return section
+    }
+
+    private static func similarSection(sideInset: CGFloat) -> NSCollectionLayoutSection {
+        let itemSize = NSCollectionLayoutSize(
+            widthDimension: .absolute(Theme.relatedPosterWidth),
+            heightDimension: .fractionalHeight(1)
+        )
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        let groupSize = NSCollectionLayoutSize(
+            widthDimension: .absolute(Theme.relatedPosterWidth),
+            heightDimension: .absolute(Theme.relatedCardHeight)
+        )
+        let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+        let section = NSCollectionLayoutSection(group: group)
+        section.orthogonalScrollingBehavior = .continuous
+        section.interGroupSpacing = Theme.shelfSpacing
+        section.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: sideInset, bottom: 36, trailing: sideInset)
         section.contentInsetsReference = .none
         section.supplementariesFollowContentInsets = true
         section.boundarySupplementaryItems = [railHeader()]
@@ -331,12 +392,14 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
             guard let self = self else { return }
             async let movieResult = self.loadMovie(movieID)
             async let creditsResult = self.loadCredits(movieID)
+            async let similarResult = self.loadSimilar(movieID)
             let movie = await movieResult
             let credits = await creditsResult
+            let similar = await similarResult
             guard !Task.isCancelled else { return }
             switch movie {
             case .success(let movie):
-                self.show(movie: movie, credits: credits)
+                self.show(movie: movie, credits: credits, similar: similar)
             case .failure(let error):
                 guard !self.isCancellation(error) else { return }
                 self.showMessage(self.message(for: error), retry: true)
@@ -360,7 +423,15 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
         }
     }
 
-    private func show(movie: Movie, credits: Result<MovieCredits, Error>) {
+    private func loadSimilar(_ id: Int) async -> Result<[Movie], Error> {
+        do {
+            return .success(try await service.similarMovies(to: id))
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    private func show(movie: Movie, credits: Result<MovieCredits, Error>, similar: Result<[Movie], Error>) {
         let title = movie.title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else {
             showMessage("This movie isn't available right now.", retry: true)
@@ -379,17 +450,35 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
             castMembers = []
             castNote = .castFailed
         }
+        switch similar {
+        case .success(let movies):
+            similarMovies = uniqueMovies(movies, excluding: movie.id)
+            similarNote = similarMovies.isEmpty ? .similarEmpty : nil
+        case .failure:
+            similarMovies = []
+            similarNote = .similarFailed
+        }
         applyContent()
+    }
+
+    private func uniqueMovies(_ movies: [Movie], excluding excludedID: Int) -> [Movie] {
+        var seen = Set<Int>([excludedID])
+        return movies.filter { seen.insert($0.id).inserted }
     }
 
     private func applyContent() {
         var snapshot = NSDiffableDataSourceSnapshot<DetailSection, DetailItem>()
-        snapshot.appendSections([.summary, .cast])
+        snapshot.appendSections([.summary, .cast, .similar])
         snapshot.appendItems([.summary], toSection: .summary)
         if let castNote {
             snapshot.appendItems([.note(castNote)], toSection: .cast)
         } else {
             snapshot.appendItems(castMembers.map { DetailItem.person($0) }, toSection: .cast)
+        }
+        if let similarNote {
+            snapshot.appendItems([.note(similarNote)], toSection: .similar)
+        } else {
+            snapshot.appendItems(similarMovies.map { DetailItem.similar($0) }, toSection: .similar)
         }
         dataSource.apply(snapshot, animatingDifferences: false)
         collectionView.setCollectionViewLayout(makeLayout(sideInset: appliedSideInset), animated: false)
@@ -457,7 +546,7 @@ final class MovieDetailViewController: UIViewController, UICollectionViewDelegat
 final class DetailNoteCell: UICollectionViewCell {
     private let label = UILabel()
 
-    override var canBecomeFocused: Bool { false }
+    override var canBecomeFocused: Bool { true }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -482,5 +571,17 @@ final class DetailNoteCell: UICollectionViewCell {
     func configure(_ text: String) {
         label.text = text
         accessibilityLabel = text
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        label.textColor = Theme.secondaryText
+    }
+
+    override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
+        coordinator.addCoordinatedAnimations { [weak self] in
+            guard let self = self else { return }
+            self.label.textColor = self.isFocused ? Theme.primaryText : Theme.secondaryText
+        }
     }
 }

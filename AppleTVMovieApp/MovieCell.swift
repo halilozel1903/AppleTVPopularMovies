@@ -16,6 +16,8 @@ final class MovieCell: UICollectionViewCell {
 
     private var loadTask: Task<Void, Never>?
     private var representedID: Int?
+    private var posterHeightConstraint: NSLayoutConstraint?
+    private var titleHeightConstraint: NSLayoutConstraint?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -27,7 +29,13 @@ final class MovieCell: UICollectionViewCell {
         setup()
     }
 
-    func configure(with movie: Movie) {
+    func configure(
+        with movie: Movie,
+        posterHeight: CGFloat = Theme.posterHeight,
+        titleHeight: CGFloat = Theme.titleHeight
+    ) {
+        posterHeightConstraint?.constant = posterHeight
+        titleHeightConstraint?.constant = titleHeight
         representedID = movie.id
         titleLabel.text = movie.title
         accessibilityLabel = movie.accessibilitySummary
@@ -125,7 +133,6 @@ final class MovieCell: UICollectionViewCell {
             shadowView.topAnchor.constraint(equalTo: contentView.topAnchor),
             shadowView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             shadowView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            shadowView.heightAnchor.constraint(equalToConstant: Theme.posterHeight),
 
             posterView.topAnchor.constraint(equalTo: shadowView.topAnchor),
             posterView.leadingAnchor.constraint(equalTo: shadowView.leadingAnchor),
@@ -139,8 +146,14 @@ final class MovieCell: UICollectionViewCell {
 
             titleLabel.topAnchor.constraint(equalTo: shadowView.bottomAnchor, constant: 12),
             titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            titleLabel.heightAnchor.constraint(equalToConstant: Theme.titleHeight)
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
         ])
+
+        let posterHeight = shadowView.heightAnchor.constraint(equalToConstant: Theme.posterHeight)
+        let titleHeight = titleLabel.heightAnchor.constraint(equalToConstant: Theme.titleHeight)
+        posterHeight.isActive = true
+        titleHeight.isActive = true
+        posterHeightConstraint = posterHeight
+        titleHeightConstraint = titleHeight
     }
 }

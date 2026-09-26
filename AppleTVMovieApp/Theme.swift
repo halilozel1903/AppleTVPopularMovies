@@ -32,4 +32,8 @@ enum Theme {
     static let castCardWidth: CGFloat = 168
     static let castPhotoHeight: CGFloat = 210
     static let castCardHeight: CGFloat = 304
+    static let relatedPosterWidth: CGFloat = 220
+    static let relatedPosterHeight: CGFloat = 330
+    static let relatedTitleHeight: CGFloat = 58
+    static let relatedCardHeight: CGFloat = 400
 }

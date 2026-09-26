@@ -21,7 +21,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let window = UIWindow(windowScene: windowScene)
         window.backgroundColor = Theme.backdrop
         window.overrideUserInterfaceStyle = .dark
-        window.rootViewController = ViewController()
+        let navigation = UINavigationController(rootViewController: ViewController())
+        navigation.setNavigationBarHidden(true, animated: false)
+        navigation.view.backgroundColor = Theme.backdrop
+        window.rootViewController = navigation
         window.makeKeyAndVisible()
         self.window = window
     }

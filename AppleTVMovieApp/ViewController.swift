@@ -82,6 +82,12 @@ final class ViewController: UIViewController, UICollectionViewDelegate {
         }
     }
 
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard movies.indices.contains(indexPath.item) else { return }
+        let detail = MovieDetailViewController(movie: movies[indexPath.item], service: service)
+        navigationController?.pushViewController(detail, animated: true)
+    }
+
     private func configureAppearance() {
         view.backgroundColor = Theme.backdrop
         gradientLayer.colors = [Theme.backdropTop.cgColor, Theme.backdrop.cgColor]

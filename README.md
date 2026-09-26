@@ -2,9 +2,7 @@
 
 A dark tvOS shelf for movies on [TMDb](https://www.themoviedb.org/). The catalog is a set of horizontal rails. Focus a poster to read the year, rating, and a short overview. Open it for the director, the cast, and similar titles.
 
-![Catalog rails](Screenshots/catalog-rails.png)
-
-![Detail with credits and similar titles](Screenshots/detail-credits.png)
+The catalog and the detail page are what you see in the tvOS simulator after you put your own TMDb key in `Info.plist`.
 
 ## Technologies
 

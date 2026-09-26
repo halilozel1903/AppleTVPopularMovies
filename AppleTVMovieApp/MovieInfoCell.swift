@@ -70,6 +70,7 @@ final class MovieInfoCell: UICollectionViewCell {
     private func setup() {
         backgroundColor = .clear
         contentView.backgroundColor = .clear
+        contentView.clipsToBounds = true
         isAccessibilityElement = true
 
         posterView.translatesAutoresizingMaskIntoConstraints = false
@@ -94,16 +95,16 @@ final class MovieInfoCell: UICollectionViewCell {
         )
         eyebrowLabel.accessibilityLabel = "Movie"
 
-        titleLabel.font = UIFont.systemFont(ofSize: 48, weight: .bold)
+        titleLabel.font = UIFont.systemFont(ofSize: 46, weight: .bold)
         titleLabel.textColor = Theme.primaryText
-        titleLabel.numberOfLines = 3
+        titleLabel.numberOfLines = 2
 
         metaLabel.font = UIFont.systemFont(ofSize: 28, weight: .medium)
         metaLabel.textColor = Theme.gold
 
         overviewLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
         overviewLabel.textColor = Theme.overviewText
-        overviewLabel.numberOfLines = 4
+        overviewLabel.numberOfLines = 3
 
         directorLabel.font = UIFont.systemFont(ofSize: 30, weight: .semibold)
         directorLabel.textColor = Theme.primaryText

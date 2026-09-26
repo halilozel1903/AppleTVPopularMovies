@@ -1,54 +1,60 @@
 # Apple TV Popular Movies
 
-A tvOS app for the movies that are popular on [TMDb](https://www.themoviedb.org/) right now. The home screen is a poster shelf. Selecting a title opens its detail page.
+A dark tvOS shelf for what is popular on [TMDb](https://www.themoviedb.org/) tonight. Focus a poster to read the year, rating, and a short overview. Select it for the full page.
 
-![Catalog shelf](Screenshots/catalog.png)
+![Catalog](Screenshots/catalog.png)
 
-![Movie detail](Screenshots/detail.png)
+![Detail](Screenshots/detail.png)
 
-## Features
+## Add your key first
 
-- First page of popular movies, with poster, title, year, rating, and a two-line overview on the focused card
-- Detail page for the selected movie: large poster, title, year, rating, and the full overview
-- Movies button, and the menu button, return to the shelf
-- Loading, empty, and error states on the shelf, each with Try Again when a request fails
-- Loading and error states on the detail page, with Try Again and a way back
-- Poster images downloaded off the main thread and kept in a memory cache
+This repository does not include a TMDb key. The app will not load movies until you paste your own.
+
+1. Create a v3 API key at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api).
+2. Open `AppleTVMovieApp/Info.plist`.
+3. Paste the key into the empty `TMDBAPIKey` string.
+4. Run. If that value is still empty, the shelf tells you to add it.
+
+Do not commit your key.
+
+## What you get
+
+- A horizontal poster shelf of the current popular list
+- Focus that scales the card and updates the title, year, rating, and overview
+- A detail page with the large poster and the full synopsis
+- **Movies**, or the menu button, back to the shelf
+- Loading, empty, and error states, with **Try Again**
+- Posters fetched off the main thread and cached in memory
 - UIKit only. No third-party packages
 
-## Requirements
+## Run
 
-- macOS with Xcode 16 or later
-- tvOS 18 SDK
-- Apple TV simulator or an Apple TV
-- A TMDb v3 API key
-
-## Getting started
+You need macOS, Xcode 16 or later, and the tvOS 18 SDK. An Apple TV simulator is enough.
 
 1. Clone the repository and open `AppleTVMovieApp.xcodeproj`.
-2. The key is `TMDBAPIKey` in `AppleTVMovieApp/Info.plist`. A sample key is included so the project runs. Replace it with your own key from [TMDb API settings](https://www.themoviedb.org/settings/api) before you share a build.
+2. Paste your TMDb key into `TMDBAPIKey`, as above.
 3. Select the **AppleTVMovieApp** scheme and an Apple TV destination.
-4. If signing fails, set your Development Team under Signing & Capabilities. Signing is automatic.
+4. If signing fails, choose your Development Team. Signing is automatic.
 
-In the simulator, the arrow keys move along the shelf and Return opens the focused title. On a remote, swipe to move and press to select. Menu returns to the shelf.
+In the simulator, the arrow keys move and Return opens the focused title. On a remote, swipe and press. Menu returns to the shelf.
 
-## Architecture
+## How it is built
 
-`SceneDelegate` creates a navigation stack with a hidden bar. `ViewController` loads `GET /3/movie/popular` and owns the shelf. Selecting a poster pushes `MovieDetailViewController`, which loads `GET /3/movie/{id}`. `Movie` decodes both responses. `ImageLoader` fetches `w780` posters. The deployment target is tvOS 18, and every request is HTTPS.
+`SceneDelegate` owns a navigation stack with a hidden bar. `ViewController` requests `GET /3/movie/popular`. Selecting a poster pushes `MovieDetailViewController`, which requests `GET /3/movie/{id}`. Both responses decode into `Movie`. `ImageLoader` downloads `w780` posters. The deployment target is tvOS 18. Traffic is HTTPS only.
 
 ```text
 AppleTVMovieApp/
-  AppDelegate.swift              app entry
-  SceneDelegate.swift            window and navigation stack
-  ViewController.swift           shelf, focus lockup, catalog status
-  MovieDetailViewController.swift  detail page
-  MovieCell.swift                poster card
-  Movie.swift                    decoded movie
-  MovieService.swift             popular list and movie details
-  ImageLoader.swift              poster cache
-  Theme.swift                    color and size constants
-  Info.plist                     API key, scene manifest, launch color
-  Assets.xcassets                icon, top shelf, backdrop color
+  AppDelegate.swift                 entry
+  SceneDelegate.swift               window and navigation
+  ViewController.swift              shelf and catalog states
+  MovieDetailViewController.swift   detail page
+  MovieCell.swift                   poster card
+  Movie.swift                       decoded movie
+  MovieService.swift                popular list and one title
+  ImageLoader.swift                 poster cache
+  Theme.swift                       color and type scale
+  Info.plist                        your API key, scenes, launch color
+  Assets.xcassets                   icon, top shelf, backdrop
 ```
 
 ## License
@@ -63,6 +69,4 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## Data
-
-Movie data and poster images are provided by TMDb. This product uses the TMDb API but is not endorsed or certified by TMDb.
+Movie data and posters come from TMDb. This product uses the TMDb API but is not endorsed or certified by TMDb.

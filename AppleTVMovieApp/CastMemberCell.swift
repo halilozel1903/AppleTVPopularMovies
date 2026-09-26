@@ -145,15 +145,15 @@ final class CastMemberCell: UICollectionViewCell {
             placeholderView.widthAnchor.constraint(equalToConstant: 48),
             placeholderView.heightAnchor.constraint(equalToConstant: 48),
 
-            nameLabel.topAnchor.constraint(equalTo: shadowView.bottomAnchor, constant: 10),
+            nameLabel.topAnchor.constraint(equalTo: shadowView.bottomAnchor, constant: 8),
             nameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             nameLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            nameLabel.heightAnchor.constraint(equalToConstant: 52),
+            nameLabel.heightAnchor.constraint(equalToConstant: 44),
 
             characterLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 2),
             characterLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             characterLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            characterLabel.heightAnchor.constraint(equalToConstant: 26)
+            characterLabel.heightAnchor.constraint(equalToConstant: 22)
         ])
     }
 }

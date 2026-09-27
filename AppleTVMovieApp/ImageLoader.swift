@@ -8,7 +8,7 @@
 
 import UIKit
 
-enum ImageLoadError: Error {
+enum ImageLoadError: Error, Sendable {
     case invalidData
 }
 
@@ -27,7 +27,7 @@ final class ImageLoader {
             configuration.timeoutIntervalForResource = 45
             self.session = URLSession(configuration: configuration)
         }
-        cache.countLimit = 60
+        cache.countLimit = 180
     }
 
     func image(for url: URL) async throws -> UIImage {
@@ -38,11 +38,20 @@ final class ImageLoader {
 
         let (data, response) = try await session.data(from: url)
         guard let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
-              let image = UIImage(data: data) else {
+              (200..<300).contains(http.statusCode) else {
             throw ImageLoadError.invalidData
         }
+        let image = try await decode(data)
         cache.setObject(image, forKey: key)
         return image
+    }
+
+    private func decode(_ data: Data) async throws -> UIImage {
+        try await Task.detached(priority: .userInitiated) {
+            guard let image = UIImage(data: data) else {
+                throw ImageLoadError.invalidData
+            }
+            return image
+        }.value
     }
 }

@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum MovieServiceError: LocalizedError {
+enum MovieServiceError: LocalizedError, Sendable {
     case missingAPIKey
     case server(statusCode: Int)
     case invalidResponse
@@ -25,15 +25,15 @@ enum MovieServiceError: LocalizedError {
     }
 }
 
-struct MovieService {
-    var session: URLSession
-    var apiKey: String
-    var popularURL: URL
+struct MovieService: Sendable {
+    let session: URLSession
+    let apiKey: String
+    let baseURL: URL
 
     init(
         session: URLSession? = nil,
         apiKey: String = Bundle.main.object(forInfoDictionaryKey: "TMDBAPIKey") as? String ?? "",
-        popularURL: URL = URL(string: "https://api.themoviedb.org/3/movie/popular")!
+        baseURL: URL = URL(string: "https://api.themoviedb.org/3")!
     ) {
         if let session {
             self.session = session
@@ -44,25 +44,44 @@ struct MovieService {
             self.session = URLSession(configuration: configuration)
         }
         self.apiKey = apiKey
-        self.popularURL = popularURL
+        self.baseURL = baseURL
     }
 
-    func popularMovies() async throws -> [Movie] {
-        let data = try await fetch(popularURL)
-        do {
-            return try JSONDecoder().decode(PopularMoviesPage.self, from: data).results
-        } catch {
-            throw MovieServiceError.invalidResponse
-        }
+    func movies(in rail: MovieRail) async throws -> [Movie] {
+        let url = baseURL
+            .appendingPathComponent("movie")
+            .appendingPathComponent(rail.endpoint)
+        return try await decode(MoviePage.self, from: try await fetch(url)).results
     }
 
     func movieDetails(id: Int) async throws -> Movie {
-        guard let url = URL(string: "https://api.themoviedb.org/3/movie/\(id)") else {
+        try await decode(Movie.self, from: try await fetch(try movieURL(id: id)))
+    }
+
+    func credits(for id: Int) async throws -> MovieCredits {
+        try await decode(MovieCredits.self, from: try await fetch(try movieURL(id: id, suffix: "credits")))
+    }
+
+    func similarMovies(to id: Int) async throws -> [Movie] {
+        try await decode(MoviePage.self, from: try await fetch(try movieURL(id: id, suffix: "similar"))).results
+    }
+
+    private func movieURL(id: Int, suffix: String? = nil) throws -> URL {
+        guard id > 0 else {
             throw MovieServiceError.invalidResponse
         }
-        let data = try await fetch(url)
+        var url = baseURL
+            .appendingPathComponent("movie")
+            .appendingPathComponent(String(id))
+        if let suffix {
+            url.appendPathComponent(suffix)
+        }
+        return url
+    }
+
+    private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
         do {
-            return try JSONDecoder().decode(Movie.self, from: data)
+            return try JSONDecoder().decode(type, from: data)
         } catch {
             throw MovieServiceError.invalidResponse
         }

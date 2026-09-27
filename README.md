@@ -1,58 +1,83 @@
 # Apple TV Popular Movies
 
-A dark tvOS shelf for what is popular on [TMDb](https://www.themoviedb.org/) tonight. Focus a poster to read the year, rating, and a short overview. Select it for the full page.
+A dark tvOS shelf for movies on [TMDb](https://www.themoviedb.org/). The catalog is a set of horizontal rails. Focus a poster to read the year, rating, and a short overview. Open it for the director, the cast, and similar titles.
 
-![Catalog](Screenshots/catalog.png)
+The catalog and the detail page are what you see in the tvOS simulator after you put your own TMDb key in `Info.plist`.
 
-![Detail](Screenshots/detail.png)
+## Technologies
 
-## Add your key first
+| | |
+| --- | --- |
+| Platform | tvOS 18 |
+| UI | UIKit, built in code. No storyboards |
+| Layout | `UICollectionView` compositional layout, one shelf per section |
+| Focus | tvOS focus engine, scale and a focus ring |
+| Networking | `async`/`await` `URLSession` |
+| Models | `Decodable` |
+| Images | TMDb image CDN, decoded off the main thread |
+| Data | TMDb API v3 |
 
-This repository does not include a TMDb key. The app will not load movies until you paste your own.
+TMDb endpoints:
 
-1. Create a v3 API key at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api).
-2. Open `AppleTVMovieApp/Info.plist`.
-3. Paste the key into the empty `TMDBAPIKey` string.
-4. Run. If that value is still empty, the shelf tells you to add it.
+- `/movie/popular`
+- `/movie/top_rated`
+- `/movie/now_playing`
+- `/movie/upcoming`
+- `/movie/{id}`
+- `/movie/{id}/credits`
+- `/movie/{id}/similar`
+- Poster and profile images from the TMDb image base URL
 
-Do not commit your key.
+There are no third-party packages.
+
+## Add your key
+
+This repository does not ship a TMDb key. `TMDBAPIKey` in `AppleTVMovieApp/Info.plist` is an empty placeholder. Paste your own v3 key there before you run the app. Create one at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api).
+
+If the value is still empty, the catalog asks you to add it. Do not commit your key.
 
 ## What you get
 
-- A horizontal poster shelf of the current popular list
-- Focus that scales the card and updates the title, year, rating, and overview
-- A detail page with the large poster and the full synopsis
-- **Movies**, or the menu button, back to the shelf
-- Loading, empty, and error states, with **Try Again**
-- Posters fetched off the main thread and cached in memory
-- UIKit only. No third-party packages
+- Four rails: Popular, Top Rated, Now Playing, and Upcoming. Each shelf scrolls sideways. Moving vertically switches rails.
+- A backdrop behind the focused title, with year and rating chips
+- Focus that scales the poster and draws a ring
+- A detail page with the poster, title, year, rating, and overview
+- The director, and a cast row with names and profile photos when TMDb sends them
+- A similar-movies shelf. Selecting a poster opens that movie
+- **Movies**, or the remote Menu button, returns to the previous screen
+- Loading, empty, and error panels, with **Try Again**
 
 ## Run
 
-You need macOS, Xcode 16 or later, and the tvOS 18 SDK. An Apple TV simulator is enough.
+You need macOS, Xcode 16 or later, and the tvOS 18 SDK. The Apple TV simulator is enough.
 
 1. Clone the repository and open `AppleTVMovieApp.xcodeproj`.
-2. Paste your TMDb key into `TMDBAPIKey`, as above.
+2. Paste your TMDb key into `TMDBAPIKey`.
 3. Select the **AppleTVMovieApp** scheme and an Apple TV destination.
 4. If signing fails, choose your Development Team. Signing is automatic.
 
-In the simulator, the arrow keys move and Return opens the focused title. On a remote, swipe and press. Menu returns to the shelf.
+In the simulator, the arrow keys move and Return opens the focused title. On a remote, swipe and press. Menu goes back.
 
 ## How it is built
 
-`SceneDelegate` owns a navigation stack with a hidden bar. `ViewController` requests `GET /3/movie/popular`. Selecting a poster pushes `MovieDetailViewController`, which requests `GET /3/movie/{id}`. Both responses decode into `Movie`. `ImageLoader` downloads `w780` posters. The deployment target is tvOS 18. Traffic is HTTPS only.
+`SceneDelegate` owns a navigation stack with a hidden bar. `ViewController` loads the four lists together and lays them out as orthogonal shelves. Selecting a poster pushes `MovieDetailViewController`, which loads the movie, its credits, and similar titles in parallel. `ImageLoader` caches posters, backdrops, and profile photos. The deployment target is tvOS 18. Traffic is HTTPS only.
 
 ```text
 AppleTVMovieApp/
   AppDelegate.swift                 entry
   SceneDelegate.swift               window and navigation
-  ViewController.swift              shelf and catalog states
-  MovieDetailViewController.swift   detail page
-  MovieCell.swift                   poster card
-  Movie.swift                       decoded movie
-  MovieService.swift                popular list and one title
-  ImageLoader.swift                 poster cache
-  Theme.swift                       color and type scale
+  ViewController.swift              rails, hero, catalog states
+  MovieDetailViewController.swift   detail, cast, similar, detail states
+  MovieCell.swift                   poster card and focus ring
+  CastMemberCell.swift              cast photo, name, and role
+  MovieInfoCell.swift               poster, chips, overview, director
+  RailHeaderView.swift              shelf title
+  MetadataChip.swift                year and rating chips
+  StatusPanel.swift                 loading, empty, and error
+  Movie.swift                       movie, credits, and image URLs
+  MovieService.swift                TMDb lists, detail, credits, similar
+  ImageLoader.swift                 image cache, decode off the main thread
+  Theme.swift                       color, type, and metrics
   Info.plist                        your API key, scenes, launch color
   Assets.xcassets                   icon, top shelf, backdrop
 ```
